@@ -72,6 +72,11 @@ def run_cpp_benchmark():
         print("ERROR: ./qbits_sim not found. Build it first.")
         return None
 
+def save_benchmark_results(filename, results_text):
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(results_text)
+    print(f"\n[INFO] Benchmark results saved to {filename}")
+
 if __name__ == "__main__":
     print("qBITS Single-Qubit Simulator — NumPy Reference Benchmark")
     print("=" * 60)
@@ -93,11 +98,51 @@ if __name__ == "__main__":
     print(f"Throughput: {throughput:,.0f} gates/sec")
     print(f"Checksum:   {dummy} (prevents optimization)")
     
+    report_lines = [
+        "qBITS Single-Qubit Simulator Benchmarks",
+        "=" * 60,
+        "NUMPY BENCHMARK",
+        f"Iterations: {N:,}",
+        f"Total time: {total_us/1000:.2f} ms",
+        f"Per gate:   {per_gate_us:.4f} µs",
+        f"Throughput: {throughput:,.0f} gates/sec"
+    ]
+    
     cpp_output = run_cpp_benchmark()
     
     if cpp_output:
+        import re
+        match = re.search(r'Per gate:\s*([\d.]+)\s*µs', cpp_output)
+        cpp_per_gate_us = float(match.group(1)) if match else None
+
         print("\n" + "=" * 60)
-        print("COMPARISON")
+        print("COMPARISON & CONCLUSION")
         print("=" * 60)
         print(f"NumPy per gate: {per_gate_us:.4f} µs")
+        if cpp_per_gate_us and cpp_per_gate_us > 0:
+            speedup = per_gate_us / cpp_per_gate_us
+            print(f"C++ per gate:   {cpp_per_gate_us:.4f} µs")
+            print(f"\nCONCLUSION: The custom C++ engine is approximately {speedup:,.0f}x faster than")
+            print("the NumPy reference script in raw single-thread simulator throughput!")
+
+        report_lines.extend([
+            "\n" + "=" * 60,
+            "C++ SIMULATOR BENCHMARK",
+            "=" * 60,
+            cpp_output.strip(),
+            "\n" + "=" * 60,
+            "COMPARISON & CONCLUSION",
+            "=" * 60,
+            f"NumPy per gate: {per_gate_us:.4f} µs"
+        ])
+        
+        if cpp_per_gate_us and cpp_per_gate_us > 0:
+            report_lines.extend([
+                f"C++ per gate:   {cpp_per_gate_us:.4f} µs",
+                f"\nCONCLUSION: The custom C++ engine is approximately {speedup:,.0f}x faster than",
+                "the NumPy reference script in raw single-thread simulator throughput!"
+            ])
+    
+    # Save the consolidated text buffer to file
+    save_benchmark_results("benchmark_results.txt", "\n".join(report_lines))
        
