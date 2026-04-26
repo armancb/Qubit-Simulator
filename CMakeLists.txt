@@ -9,4 +9,5 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(-Wall -Wextra -O3)
 endif()
 
-add_executable(qbits_sim main.cpp)
+# Add the benchmark executable
+add_executable(qbits_sim benchmark/main.cpp)
